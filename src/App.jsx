@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, use } from 'react'
 import './index.css';
 import './App.css';
 import Search from './components/search';
+import Loader from './components/Loader';
+import MovieCard from './components/MovieCard';
+import { useDebounce } from 'react-use';
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -21,12 +24,16 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState(null);
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(" ");
+  //use DebounceHook used for search and api optimisation
+  useDebounce(() => setDebouncedSearchTerm(searchTerm), 750 , [searchTerm])
 
-  const fetchMovies = async () => {
+  const fetchMovies = async (query = "") => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const endpoint = `${API_BASE_URL}/discover/movie?include_adult=true&sort_by=popularity.desc&api_key=${API_KEY}`;
+      const endpoint = query ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&api_key=${API_KEY}` :
+      `${API_BASE_URL}/discover/movie?sort_by=popularity.desc&api_key=${API_KEY}`;
 
       const response = await fetch(endpoint, API_OPTIONS);
 
@@ -37,7 +44,7 @@ const App = () => {
       }
 
       const data = await response.json();
-      console.log(data);
+      // console.log(data);
 
       if (data.response === 'False') {
         setErrorMessage(data.Error || "Failed to fetch data from TMDB API");
@@ -56,8 +63,8 @@ const App = () => {
   }
 
   useEffect(() => {
-    fetchMovies();
-  }, [])
+    fetchMovies(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   return (
     <main>
@@ -75,14 +82,14 @@ const App = () => {
         <section className='all-movies'>
           <h2 className='text-amber-50 text-2xl font-bold flex p-4'>All Movies :</h2>
         {loading ? (
-          <p className='text-white text-2xl'>Loading...</p>
+          <Loader />
         ) : errorMessage ? (
           <p className='text-red-500'>{errorMessage}</p>
         ) : (
           <ul>
             {
               movies.map((movie) => (
-                <p className='text-white font-bold'>{movie.title}</p>
+               <MovieCard key={movie.id} movie={movie} />
               ))
             }
           </ul>
