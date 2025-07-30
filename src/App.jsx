@@ -1,10 +1,11 @@
 import React, { useState, useEffect, use } from 'react'
 import './index.css';
 import './App.css';
-import Search from './components/search';
-import Loader from './components/Loader';
-import MovieCard from './components/MovieCard';
+import Search from './components/Search.jsx';
+import Loader from './components/Loader.jsx';
+import MovieCard from './components/MovieCard.jsx';
 import { useDebounce } from 'react-use';
+import { updateSearchCount } from './appwrite.js';
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -54,6 +55,7 @@ const App = () => {
 
       setMovies(data.results || []);
 
+      updateSearchCount();
     } catch (error) {
       console.error("Error fetching data from TMDB API:", error);
       setErrorMessage("Failed to fetch data from TMDB API");
