@@ -5,7 +5,7 @@ import Search from './components/Search.jsx';
 import Loader from './components/Loader.jsx';
 import MovieCard from './components/MovieCard.jsx';
 import { useDebounce } from 'react-use';
-import { updateSearchCount } from './appwrite.js';
+import { updateSearchCount, getTrendingMovies } from './appwrite.js';
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -24,6 +24,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [errorMessage, setErrorMessage] = useState(null);
   const [movies, setMovies] = useState([]);
+  const [trendingMovies, setTrendingMovies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(" ");
   //use DebounceHook used for search and api optimisation
@@ -55,7 +56,12 @@ const App = () => {
 
       setMovies(data.results || []);
 
-      updateSearchCount();
+      if(query && data.results.length > 0){
+        await updateSearchCount(query, data.results[0]);
+      }
+      
+      // console.log("Movies fetched successfully:", data.results[1].original_title);
+
     } catch (error) {
       console.error("Error fetching data from TMDB API:", error);
       setErrorMessage("Failed to fetch data from TMDB API");
@@ -64,10 +70,23 @@ const App = () => {
     }
   }
 
+  const fetchTrendingMovies = async () => {
+    try {
+        const movies = await getTrendingMovies();
+        setTrendingMovies(movies);
+    } catch (error) {
+      console.error("Error fetching trending movies:", error);
+    }
+  }
+
   useEffect(() => {
     fetchMovies(debouncedSearchTerm);
   }, [debouncedSearchTerm]);
 
+  useEffect(() => {
+    fetchTrendingMovies();
+  }, [])
+  
   return (
     <main>
       <div className='pattern' />
@@ -77,9 +96,25 @@ const App = () => {
           <img src="./hero-img.png" alt="Hero Banner" />
 
           <h1>Searching <span className='text-gradient'>Movies</span> Has Never Been <span className='reverse-text-gradient'>Easier</span> !</h1>
-        </header>
 
         <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        </header>
+
+        {trendingMovies.length > 0 && (
+          <section className='trending'>
+            <h2>Trending Movies</h2>
+            <ul>
+             {trendingMovies.map((movie,index) => (
+              <li key={movie.$id}>
+                <p>{index + 1}</p>
+                <img src={movie.poster_url} alt={movie.searchTerm} />
+              </li>
+             ))}
+            </ul>
+          </section>
+        )}
+
+
         {/* <h1 className='text-amber-50'>{searchTerm}</h1> */}
         <section className='all-movies'>
           <h2 className='text-amber-50 text-2xl font-bold flex p-4'>All Movies :</h2>
